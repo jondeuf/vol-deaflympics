@@ -25,7 +25,7 @@ async function fetchManifest() {
 function getVideoUrl(manifest, catId, frWord) {
   const file = slugify(frWord) + ".mp4";
   const list = manifest[catId] || [];
-  return list.includes(file) ? `/videos/${catId}/${file}` : null;
+  return list.includes(file) ? `${BASE}videos/${catId}/${file}` : null;
 }
 
 /* ---------- Bloc À propos ---------- */
@@ -315,7 +315,7 @@ export default function App() {
     let ok = 0, ko = 0;
 
     for (const f of files) {
-      const url = `/videos/${catId}/${f}`;
+      const url = `${location.origin}${BASE}videos/${catId}/${f}`;
       try {
         // 1) vérifier que le fichier existe (évite que le cache plante silencieusement)
         const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
@@ -344,8 +344,9 @@ export default function App() {
       setDownloadPct(0);
       const cache = await caches.open('videos-v1');
       const entries = Object.entries(videoManifest);
-      const allUrls = entries.flatMap(([cat, files]) => files.map(f => `/videos/${cat}/${f}`));
-      let done = 0;
+      const allUrls = entries.flatMap(([cat, files]) =>
+        files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
+      );
       for (const url of allUrls) {
         try { await cache.add(url); } catch { /* ignore */ }
         done++;
