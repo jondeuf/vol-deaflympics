@@ -446,7 +446,7 @@ App: DeaFLYMPICS PWA
   <span style={{ fontSize: "2rem", fontWeight: "bold" }}>
     <span style={{ display:"inline-block", animation: celebrate ? "shake .6s ease" : "none" }}>✈️</span>
     {" "}Vol DeaFLYMPICS{" "}
-    <span style={{ fontSize: "1.6rem" }}>👋</span>
+    <span style={{ fontSize: "2.1rem" }}>🧏🏼</span>
   </span>
 
   {/* Animation du titre */}
@@ -818,7 +818,7 @@ App: DeaFLYMPICS PWA
       <li>Appuyer sur le bouton <strong>Partager</strong> ⬆️ (le carré avec la flêche qui monte, en haut à droite.)</li>
       <li>Choisir <strong>“Ajouter sur l’écran d’accueil”</strong> ➕.</li>
       <li>Lancer ensuite l’application depuis l’icône sur l’écran d’accueil.</li>
-      <li>Penses à cliquer sur Télécharger Hors Ligne pour avoir accès aux vidéos pendant le vol ! ✈️</li>
+      <li>Clique sur Télécharger Hors Ligne pour avoir accès aux vidéos pendant le vol ! ✈️</li>
     </ol>
     <p style={{ fontSize: ".9rem", opacity: 0.8 }}>
     </p>
@@ -853,8 +853,8 @@ App: DeaFLYMPICS PWA
 </div>
   {/* Pied de page / mentions */}
           <footer style={{margin:"0 0 1rem", fontSize:".9rem", color:"#6b7a99", textAlign:"center", maxWidth:900, lineHeight:1.5}}>
-            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) Air France — Glossaire LSF hors-ligne pour le vol Paris ⇄ Tokyo.<br/>
-            Vidéos : droits réservés à leurs ayants droit / sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
+            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) Air France — Glossaire LSF hors-ligne pour les vols Paris ⇄ Tokyo ⇄ Paris.<br/>
+            Vidéos : droits réservés à leurs ayants droit / Julien Bazin / Sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
           </footer>
 </div>
     </div>
