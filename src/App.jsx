@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import deaflympicsLogo from "./assets/deaflympics2025.png";
+/* ---------- Configuration ---------- */
+// Cette constante aide à gérer le bon chemin d’accès pour le mode hors ligne
+const BASE = (import.meta?.env?.BASE_URL) || "/";
 
 /* ---------- Helpers vidéos ---------- */
 function slugify(str) {
@@ -12,7 +15,7 @@ function slugify(str) {
 }
 async function fetchManifest() {
   try {
-    const r = await fetch("/videos/manifest.json", { cache: "no-store" });
+    const r = await fetch(`${BASE}videos/manifest.json`, { cache: "no-store" });
     if (!r.ok) return {};
     return await r.json();
   } catch {
