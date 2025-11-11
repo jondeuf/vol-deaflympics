@@ -454,6 +454,14 @@ App: DeaFLYMPICS PWA
             40%, 60% { transform: translateX(3px) rotate(2deg); }
           }
         `}</style>
+        <style>{`
+  html, body, #root { width: 100%; max-width: 100%; overflow-x: hidden; }
+  img, video { max-width: 100%; height: auto; display: block; }
+  .about { overflow-x: hidden; }
+  @media (max-width: 600px){
+    .about ul { columns: 1 !important; } /* sécurité sur mobile */
+  }
+`}</style>
       </div>
 
       {!selectedGroup ? (
