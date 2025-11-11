@@ -3,6 +3,9 @@ import deaflympicsLogo from "./assets/deaflympics2025.png";
 /* ---------- Configuration ---------- */
 // Cette constante aide à gérer le bon chemin d’accès pour le mode hors ligne
 const BASE = (import.meta?.env?.BASE_URL) || "/";
+// Un seul nom de cache partagé entre l'app et le SW
+const CACHE_NAME = "videos-v2";
+
 
 /* ---------- Helpers vidéos ---------- */
 function slugify(str) {
