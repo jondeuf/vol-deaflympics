@@ -442,33 +442,43 @@ App: DeaFLYMPICS PWA
       />
 
       {/* Titre */}
-      <div style={{ textAlign: "center", marginBottom: "1.2rem", color: "#274472", fontFamily: "serif" }}>
-        <span style={{ fontSize: "2rem", fontWeight: "bold" }}>
-          <span style={{ display:"inline-block", animation: celebrate ? "shake .6s ease" : "none" }}>✈️</span> Vol DeaFLYMPICS <span style={{ fontSize: "1.6rem" }}>👋</span>
-        </span>
-        <style>{`
-          @keyframes shake {
-            10%, 90% { transform: translateX(-1px) rotate(-2deg); }
-            20%, 80% { transform: translateX(2px) rotate(2deg); }
-            30%, 50%, 70% { transform: translateX(-3px) rotate(-2deg); }
-            40%, 60% { transform: translateX(3px) rotate(2deg); }
-          }
-        `}</style>
-        <style>{`
+<div style={{ textAlign: "center", marginBottom: "1.2rem", color: "#274472", fontFamily: "serif" }}>
+  <span style={{ fontSize: "2rem", fontWeight: "bold" }}>
+    <span style={{ display:"inline-block", animation: celebrate ? "shake .6s ease" : "none" }}>✈️</span>
+    {" "}Vol DeaFLYMPICS{" "}
+    <span style={{ fontSize: "1.6rem" }}>👋</span>
+  </span>
+
+  {/* Animation du titre */}
+  <style>{`
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px) rotate(-2deg); }
+      20%, 80% { transform: translateX(2px) rotate(2deg); }
+      30%, 50%, 70% { transform: translateX(-3px) rotate(-2deg); }
+      40%, 60% { transform: translateX(3px) rotate(2deg); }
+    }
+  `}</style>
+</div>
+
+{/* ✅ Styles globaux anti-débordement — place-les juste après le titre */}
+<style>{`
+  :root { --page-max: 900px; }
+  *, *::before, *::after { box-sizing: border-box; }
   html, body, #root { width: 100%; max-width: 100%; overflow-x: hidden; }
   img, video { max-width: 100%; height: auto; display: block; }
-  .about { overflow-x: hidden; }
+  .page { width: 100%; max-width: var(--page-max); margin: 0 auto; padding-inline: 1rem; }
+  .about { overflow-wrap: anywhere; word-wrap: break-word; }
   @media (max-width: 600px){
-    .about ul { columns: 1 !important; } /* sécurité sur mobile */
+    .about ul { columns: 1 !important; }
   }
 `}</style>
-      </div>
 
       {!selectedGroup ? (
         <>
 
           {/* Grille des catégories (2x2) */}
           <div
+            className="about"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
