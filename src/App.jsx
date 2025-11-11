@@ -167,7 +167,6 @@ const wordLists = {
     { emoji: "⏳", word: "Attendre" },
     { emoji: "🐢", word: "Lentement" },
     { emoji: "⏰", word: "Maintenant" },
-    { emoji: "🕒", word: "Plus tard" },
     { emoji: "❓", word: "Où est ?" },
     { emoji: "❗", word: "Problème" },
     { emoji: "🤷‍♂️", word: "Ne pas comprendre" },
@@ -180,7 +179,6 @@ const wordLists = {
     { emoji: "💳", word: "Payer" },
     { emoji: "🏙️", word: "Centre-ville" },
     { emoji: "🏛️", word: "Ambassade" },
-    { emoji: "📞", word: "Appel d'urgence" },
     { emoji: "🤫", word: "Silence" },
     { emoji: "😌", word: "Calme" },
     { emoji: "⚠️", word: "Attention" },
@@ -667,113 +665,71 @@ App: DeaFLYMPICS PWA
 
       {/* -------- Modal vidéo centrée -------- */}
       {nowPlaying && (
-        <div
-          onClick={closeModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#ffffff",
-              borderRadius: "1rem",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-              width: "min(92vw, 820px)",
-              padding: "1rem",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: ".75rem", gap: ".5rem" }}>
-              <button
-                onClick={closeModal}
-                title="Retour"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: ".4rem",
-                  background: "transparent",
-                  border: "none",
-                  color: "#274472",
-                  cursor: "pointer",
-                  padding: ".4rem .2rem",
-                  fontSize: "1rem"
-                }}
-                aria-label="Revenir au glossaire"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#274472" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                <span>Retour</span>
-              </button>
+  <div
+    onClick={closeModal}
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.6)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1rem",
+      zIndex: 9999
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()} // évite de fermer si on clique sur la carte/vidéo
+      style={{
+        background: "#ffffff",
+        borderRadius: "1rem",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+        width: "min(92vw, 820px)",
+        maxHeight: "92vh",
+        padding: "1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: ".75rem"
+      }}
+    >
+      {/* Bouton flottant pour fermer (toujours visible) */}
+      <button
+        onClick={closeModal}
+        aria-label="Fermer la vidéo"
+        title="Fermer"
+        style={{
+          position: "fixed",   // fixé à l’écran
+          top: "12px",
+          right: "12px",
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(39,68,114,0.98)",
+          color: "#fff",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+          zIndex: 10000
+        }}
+      >
+        ✕
+      </button>
 
-              <h3 style={{ margin: 0, color: "#274472", flex: 1, textAlign: "center" }}>{nowLabel}</h3>
+      {/* Titre (facultatif) */}
+      <h3 style={{ margin: 0, color: "#274472", textAlign: "center" }}>{nowLabel}</h3>
 
-              <button
-                onClick={closeModal}
-                title="Fermer"
-                style={{ background: "transparent", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#274472", width: 44, height: 44 }}
-                aria-label="Fermer la vidéo"
-              >
-                ✕
-              </button>
-            </div>
-
-            <video
-              ref={videoRef}
-              src={nowPlaying}
-              controls
-              playsInline
-              style={{ width: "100%", borderRadius: ".5rem", background: "#000" }}
-              autoPlay
-            />
-
-            {/* Contrôles utiles LSF */}
-            <div style={{ display:"flex", gap:".5rem", marginTop:".6rem", justifyContent:"space-between", flexWrap:"wrap" }}>
-              <div style={{display:"flex", gap:".5rem"}}>
-                <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 5); }}>−5s</button>
-                <button onClick={() => { const v = videoRef.current; if (v) v.playbackRate = 0.75; }}>0.75×</button>
-                <button onClick={() => { const v = videoRef.current; if (v) v.playbackRate = 0.5; }}>0.5×</button>
-                <button onClick={() => { const v = videoRef.current; if (v) v.playbackRate = 1; }}>1×</button>
-                <button onClick={() => { const v = videoRef.current; if (v) v.currentTime += 5; }}>+5s</button>
-              </div>
-              <label style={{display:"inline-flex", alignItems:"center", gap:".4rem", color:"#274472"}}>
-                <input type="checkbox" onChange={(e)=>{ const v = videoRef.current; if (v) v.loop = e.target.checked; }} />
-                Boucle
-              </label>
-            </div>
-
-            <div style={{ marginTop: ".8rem", textAlign: "center", color: "#6b7a99", fontSize: ".9rem" }}>
-              Touchez en dehors de la vidéo pour fermer
-            </div>
-
-            <div style={{ marginTop: ".8rem", display: "flex", justifyContent: "center" }}>
-              <button
-                onClick={closeModal}
-                style={{
-                  background: "#274472",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "999px",
-                  padding: ".7rem 1.2rem",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                  boxShadow: "0 2px 10px rgba(39,68,114,0.25)"
-                }}
-                aria-label="Fermer le lecteur"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Vidéo : contrôles natifs uniquement */}
+      <video
+        src={nowPlaying}
+        controls
+        playsInline
+        autoPlay
+        controlsList="nodownload noplaybackrate"
+        style={{ width: "100%", borderRadius: ".5rem", background: "#000" }}
+      />
+    </div>
+  </div>
+)}
 
       {/* 🎉 overlay */}
       {celebrate && (
