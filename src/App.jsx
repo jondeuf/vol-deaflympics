@@ -438,6 +438,7 @@ App: DeaFLYMPICS PWA
   >
     {downloading ? `Téléchargement… ${downloadPct}%` : "Télécharger Hors Ligne"}
   </button>
+
 </div>
 
           {/* Grille des catégories (2x2) */}
@@ -787,6 +788,61 @@ App: DeaFLYMPICS PWA
           </div>
         </div>
       )}
+      {/* --- Bloc bas de page : Télécharger + aide iPad --- */}
+<div
+  style={{
+    width: "100%",
+    maxWidth: "700px",
+    margin: "2rem auto 2.5rem",
+    padding: "1rem",
+    textAlign: "center",
+    borderTop: "2px solid rgba(39,68,114,0.1)",
+  }}
+>
+  <button
+    onClick={cacheAllCategories}
+    disabled={downloading || !Object.keys(videoManifest || {}).length}
+    style={{
+      background: "#274472",
+      color: "#fff",
+      border: "none",
+      borderRadius: ".7rem",
+      padding: ".7rem 1.2rem",
+      cursor: "pointer",
+      boxShadow: "0 3px 8px rgba(39,68,114,0.2)",
+      fontSize: "1rem",
+      fontWeight: "bold",
+    }}
+  >
+    {downloading ? `Téléchargement… ${downloadPct}%` : "Télécharger Hors Ligne"}
+  </button>
+
+  {/* Notice iPad */}
+  <div
+    style={{
+      marginTop: "1rem",
+      background: "rgba(39,68,114,0.05)",
+      borderRadius: ".6rem",
+      padding: ".8rem 1rem",
+      textAlign: "left",
+      color: "#274472",
+      fontSize: "0.95rem",
+      lineHeight: 1.5,
+      boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+    }}
+  >
+    <strong>📲 Installation sur ton CabinPad</strong>
+    <ol style={{ marginTop: ".4rem", marginBottom: ".4rem", paddingLeft: "1.2rem" }}>
+      <li>Ouvrir ce site dans <strong>Safari</strong>.</li>
+      <li>Appuyer sur le bouton <strong>Partager</strong> ⬆️ (le carré avec la flêche qui monte, en haut à droite.)</li>
+      <li>Choisir <strong>“Ajouter sur l’écran d’accueil”</strong> ➕.</li>
+      <li>Lancer ensuite l’application depuis l’icône sur l’écran d’accueil.</li>
+      <li>Penses à cliquer sur Télécharger Hors Ligne pour avoir accès aux vidéos pendant le vol ! ✈️</li>
+    </ol>
+    <p style={{ fontSize: ".9rem", opacity: 0.8 }}>
+    </p>
+  </div>
+</div>
     </div>
   );
 }
