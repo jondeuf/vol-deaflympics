@@ -427,7 +427,7 @@ App: DeaFLYMPICS PWA
         background: "#fff",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "stretch",
         margin: 0,
         padding: 0,
         boxSizing: "border-box",
@@ -523,6 +523,7 @@ App: DeaFLYMPICS PWA
 
           {/* Bloc À propos (toujours visible) */}
           <div
+            className="page about"
             style={{
               width: "100%",
               maxWidth: "900px",
