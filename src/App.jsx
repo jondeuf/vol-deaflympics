@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import deaflympicsLogo from "./assets/deaflympics2025.png";
+
+
 /* ---------- Configuration ---------- */
-// Cette constante aide à gérer le bon chemin d’accès pour le mode hors ligne
+// Chemin de base (utile si le site est dans un sous-dossier, ex: GitHub Pages)
 const BASE = (import.meta?.env?.BASE_URL) || "/";
-// Un seul nom de cache partagé entre l'app et le SW
-const CACHE_NAME = "videos-v2";
+// Nom unique du cache vidéo (versionne pour forcer une mise à jour)
+const CACHE_NAME = "videos-v3";
 
 
 /* ---------- Helpers vidéos ---------- */
@@ -281,6 +283,12 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
 
   useEffect(() => { fetchManifest().then(setVideoManifest); }, []);
+  // --- Service Worker (enregistrement pour le mode hors ligne) ---
+useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(`${BASE}sw.js`).catch(() => {});
+  }
+}, []);
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") closeModal(); };
     window.addEventListener("keydown", onKey);
@@ -306,29 +314,24 @@ export default function App() {
 
   async function cacheCategory(catId) {
   try {
-    if (!('caches' in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
+    if (!("caches" in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
 
     const files = videoManifest[catId] || [];
-    if (!files.length) {
-      alert(`Aucune vidéo listée dans la catégorie "${catId}".`);
-      return;
-    }
+    if (!files.length) { alert(`Aucune vidéo listée dans "${catId}".`); return; }
 
-    const cache = await caches.open('videos-v1');
+    const cache = await caches.open(CACHE_NAME);
     let ok = 0, ko = 0;
 
     for (const f of files) {
+      // URL EXACTE utilisée par <video src=...>
       const url = `${location.origin}${BASE}videos/${catId}/${f}`;
       try {
-        // 1) vérifier que le fichier existe (évite que le cache plante silencieusement)
-        const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        if (!head.ok) throw new Error(`HTTP ${head.status}`);
-
-        // 2) mettre en cache ce fichier
-        await cache.add(url);
+        const res = await fetch(url, { cache: "no-store" });   // on télécharge vraiment
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await cache.put(url, res.clone());                     // on stocke à la même URL
         ok++;
       } catch (e) {
-        console.warn('⚠️ échec cache:', url, e);
+        console.warn("⚠️ échec cache:", url, e);
         ko++;
       }
     }
@@ -345,7 +348,7 @@ export default function App() {
     try {
       setDownloading(true);
       setDownloadPct(0);
-      const cache = await caches.open('videos-v1');
+      await caches.delete(CACHE_NAME);
       const entries = Object.entries(videoManifest);
       const allUrls = entries.flatMap(([cat, files]) =>
         files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)

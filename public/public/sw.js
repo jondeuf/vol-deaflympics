@@ -1,5 +1,5 @@
-// public/sw.js — Service Worker vidéos offline
-const CACHE_VIDEOS = "videos-v2";
+// public/sw.js — Service Worker vidéos offline (v3)
+const CACHE_VIDEOS = "videos-v3";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -15,21 +15,19 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
 
-  // on ne gère que le même domaine + les chemins contenant /videos/
-  const sameOrigin = url.origin === self.location.origin;
-  const isVideo = url.pathname.includes("/videos/");
-  if (!sameOrigin || !isVideo) return;
+  // On ne gère que le même domaine + les chemins contenant /videos/
+  if (url.origin !== self.location.origin) return;
+  if (!url.pathname.includes("/videos/")) return;
 
   event.respondWith(handleVideoRequest(req));
 });
 
 async function handleVideoRequest(req) {
   const cache = await caches.open(CACHE_VIDEOS);
-  const cleanUrl = req.url.split("?")[0];     // ignore la query
+  const cleanUrl = req.url.split("?")[0];  // ignore la query
   const cached = await cache.match(cleanUrl);
   const rangeHeader = req.headers.get("range");
 
-  // Si on a déjà en cache
   if (cached) {
     if (rangeHeader) return respondWithRange(cached, rangeHeader);
 
@@ -39,12 +37,10 @@ async function handleVideoRequest(req) {
     return new Response(await cached.blob(), { status: 200, headers });
   }
 
-  // Sinon: on va au réseau, on met en cache et on sert
   try {
     const res = await fetch(req);
     if (res.ok) {
-      const putable = res.clone();
-      await cache.put(cleanUrl, putable);
+      await cache.put(cleanUrl, res.clone());
     }
     if (rangeHeader) return respondWithRange(res, rangeHeader);
     return res;
