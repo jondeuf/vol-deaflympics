@@ -80,7 +80,7 @@ const ABOUT_HTML = `
   <p>
     Les Deaflympics comprennent une large gamme de sports, similaires à ceux des Jeux olympiques. Voici la liste des 31 sports présents dans la compétition :
   </p>
-  <ul style="columns: 2; margin-bottom: 1rem; line-height:1.7">
+  <ul style="margin-bottom: 1rem; line-height:1.7">
     <li>Athlétisme</li><li>Badminton</li><li>Basket-ball</li><li>Beach-volley</li><li>Bowling</li>
     <li>Cyclisme sur route</li><li>Cyclisme sur piste</li><li>Échecs</li><li>Escalade sportive</li><li>Football</li>
     <li>Golf</li><li>Handball</li><li>Judo</li><li>Karaté</li><li>Lutte</li><li>Natation</li><li>Orienteering</li><li>Pétanque</li>
