@@ -296,15 +296,40 @@ export default function App() {
   }
 
   async function cacheCategory(catId) {
-    try {
-      const cache = await caches.open('videos-v1');
-      const list = (videoManifest[catId] || []).map(f => `/videos/${catId}/${f}`);
-      await cache.addAll(list);
-      alert(`Catégorie "${catId}" prête hors-ligne (${list.length} vidéos).`);
-    } catch {
-      alert("Impossible de précharger cette catégorie (permissions/espace ?).");
+  try {
+    if (!('caches' in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
+
+    const files = videoManifest[catId] || [];
+    if (!files.length) {
+      alert(`Aucune vidéo listée dans la catégorie "${catId}".`);
+      return;
     }
+
+    const cache = await caches.open('videos-v1');
+    let ok = 0, ko = 0;
+
+    for (const f of files) {
+      const url = `/videos/${catId}/${f}`;
+      try {
+        // 1) vérifier que le fichier existe (évite que le cache plante silencieusement)
+        const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+        if (!head.ok) throw new Error(`HTTP ${head.status}`);
+
+        // 2) mettre en cache ce fichier
+        await cache.add(url);
+        ok++;
+      } catch (e) {
+        console.warn('⚠️ échec cache:', url, e);
+        ko++;
+      }
+    }
+
+    alert(`Catégorie "${catId}" prête hors-ligne : ${ok} ok, ${ko} en échec.`);
+  } catch (e) {
+    console.error(e);
+    alert("Impossible de précharger cette catégorie.");
   }
+}
 
   async function cacheAllCategories() {
     if (!('caches' in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
@@ -379,7 +404,7 @@ Infos techniques:
 User-Agent: ${navigator.userAgent}
 App: DeaFLYMPICS PWA
 `);
-    window.location.href = `mailto:ton.email@exemple.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:jubazin@airfrance.fr?subject=${subject}&body=${body}`;
   }
 
   // Liste + filtre
@@ -429,17 +454,6 @@ App: DeaFLYMPICS PWA
 
       {!selectedGroup ? (
         <>
-          {/* Boutons hors-ligne + outils */}
-          <div style={{display:"flex", gap:".6rem", flexWrap:"wrap", justifyContent:"center", alignItems:"center", margin:"0 .5rem 1rem"}}>
-  <button
-    onClick={cacheAllCategories}
-    disabled={downloading || !Object.keys(videoManifest||{}).length}
-    style={{ background:"#274472", color:"#fff", border:"none", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer", boxShadow:"0 2px 8px rgba(39,68,114,0.2)" }}
-  >
-    {downloading ? `Téléchargement… ${downloadPct}%` : "Télécharger Hors Ligne"}
-  </button>
-
-</div>
 
           {/* Grille des catégories (2x2) */}
           <div
@@ -500,40 +514,6 @@ App: DeaFLYMPICS PWA
             }}
             dangerouslySetInnerHTML={{ __html: ABOUT_HTML }}
           />
-{/* Outils (bas de page) */}
-<div style={{
-  display:"flex",
-  gap:".6rem",
-  flexWrap:"wrap",
-  justifyContent:"center",
-  alignItems:"center",
-  margin:"1rem .5rem 1.2rem"
-}}>
-  <button
-    onClick={clearAllCaches}
-    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
-  >
-    Vider le cache
-  </button>
-  <button
-    onClick={() => setShowStats(true)}
-    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
-  >
-    📊 Stats
-  </button>
-  <button
-    onClick={openContactMail}
-    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
-  >
-    ✉️ Contact
-  </button>
-</div>
-
-          {/* Pied de page / mentions */}
-          <footer style={{margin:"0 0 1rem", fontSize:".9rem", color:"#6b7a99", textAlign:"center", maxWidth:900, lineHeight:1.5}}>
-            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) Air France — Glossaire LSF hors-ligne pour le vol Paris ⇄ Tokyo.<br/>
-            Vidéos : droits réservés à leurs ayants droit / sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
-          </footer>
         </>
       ) : (
         /* Détails d'une catégorie */
@@ -595,72 +575,50 @@ App: DeaFLYMPICS PWA
 
           {/* Liste des mots */}
           <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-            {filtered.map((item) => {
-              const url = getVideoUrl(videoManifest, selectedGroup, item.word);
-              const favKey = `${selectedGroup}:${item.word}`;
-              return (
-                <li
-                  key={item.word}
-                  style={{
-                    background: favs[favKey] ? "#dff3ff" : "#e0eafc",
-                    margin: "0.4rem 0",
-                    padding: "0.75rem 1rem",
-                    borderRadius: "0.75rem",
-                    color: "#274472",
-                    fontWeight: 500,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <span style={{ fontSize: "1.4rem" }}>{item.emoji}</span>
-                    <span>{item.word}</span>
-                  </div>
+  {filtered.map((item) => {
+    const url = getVideoUrl(videoManifest, selectedGroup, item.word);
+    return (
+      <li
+        key={item.word}
+        style={{
+          background: "#e0eafc",
+          margin: "0.4rem 0",
+          padding: "0.75rem 1rem",
+          borderRadius: "0.75rem",
+          color: "#274472",
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ fontSize: "1.4rem" }}>{item.emoji}</span>
+          <span>{item.word}</span>
+        </div>
 
-                  <div style={{display:"flex", alignItems:"center"}}>
-                    {url && (
-                      <button
-                        onClick={() => openModal(url, item.word)}
-                        style={{
-                          width: 44, height: 44, minWidth: 44, minHeight: 44,
-                          borderRadius: "50%", border: "2px solid #274472", background: "#274472",
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          cursor: "pointer", padding: 0,
-                        }}
-                        aria-label={`Lire la vidéo ${item.word}`}
-                        title="Lire la vidéo"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
-                          <path d="M8 5v14l11-7z"></path>
-                        </svg>
-                      </button>
-                    )}
-
-                    {/* Favori */}
-                    <button
-                      onClick={() => toggleFav(selectedGroup, item.word)}
-                      title="Ajouter/retirer des favoris"
-                      aria-label={`Favori ${item.word}`}
-                      style={{
-                        width: 44, height: 44, minWidth: 44, minHeight: 44, marginLeft: ".4rem",
-                        borderRadius: "50%", border: "1px solid #27447222", background: "#fff",
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        cursor: "pointer", boxShadow: "0 1px 4px rgba(39,68,114,0.15)"
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24"
-                          fill={favs[favKey] ? "#f5a623" : "none"}
-                          stroke="#f5a623" strokeWidth="2">
-                        <path d="M12 17.3l-6.16 3.7L7 14.1 2 9.8l6.92-1L12 2.5l3.08 6.3L22 9.8l-5 4.3 1.16 6.9z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+        {url && (
+          <button
+            onClick={() => openModal(url, item.word)}
+            style={{
+              width: 44, height: 44, minWidth: 44, minHeight: 44,
+              borderRadius: "50%", border: "2px solid #274472", background: "#274472",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", padding: 0,
+            }}
+            aria-label={`Lire la vidéo ${item.word}`}
+            title="Lire la vidéo"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </button>
+        )}
+      </li>
+    );
+  })}
+</ul>
         </div>
       )}
 
@@ -700,8 +658,8 @@ App: DeaFLYMPICS PWA
         title="Fermer"
         style={{
           position: "fixed",   // fixé à l’écran
-          top: "12px",
-          right: "12px",
+          top: "24px",
+          right: "24px",
           width: 48,
           height: 48,
           borderRadius: "50%",
@@ -831,7 +789,7 @@ App: DeaFLYMPICS PWA
       boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
     }}
   >
-    <strong>📲 Installation sur ton CabinPad</strong>
+    <strong>📲 Installation sur ton CabinPad/PilotPad</strong>
     <ol style={{ marginTop: ".4rem", marginBottom: ".4rem", paddingLeft: "1.2rem" }}>
       <li>Ouvrir ce site dans <strong>Safari</strong>.</li>
       <li>Appuyer sur le bouton <strong>Partager</strong> ⬆️ (le carré avec la flêche qui monte, en haut à droite.)</li>
@@ -842,6 +800,39 @@ App: DeaFLYMPICS PWA
     <p style={{ fontSize: ".9rem", opacity: 0.8 }}>
     </p>
   </div>
+  {/* Outils (bas de page) */}
+<div style={{
+  display:"flex",
+  gap:".6rem",
+  flexWrap:"wrap",
+  justifyContent:"center",
+  alignItems:"center",
+  margin:"1rem .5rem 1.2rem"
+}}>
+  <button
+    onClick={clearAllCaches}
+    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
+  >
+    Vider le cache
+  </button>
+  <button
+    onClick={() => setShowStats(true)}
+    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
+  >
+    📊 Stats
+  </button>
+  <button
+    onClick={openContactMail}
+    style={{ background:"#fff", color:"#274472", border:"1px solid #27447244", borderRadius:".7rem", padding:".6rem 1rem", cursor:"pointer" }}
+  >
+    ✉️ Contact
+  </button>
+</div>
+  {/* Pied de page / mentions */}
+          <footer style={{margin:"0 0 1rem", fontSize:".9rem", color:"#6b7a99", textAlign:"center", maxWidth:900, lineHeight:1.5}}>
+            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) Air France — Glossaire LSF hors-ligne pour le vol Paris ⇄ Tokyo.<br/>
+            Vidéos : droits réservés à leurs ayants droit / sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
+          </footer>
 </div>
     </div>
   );
