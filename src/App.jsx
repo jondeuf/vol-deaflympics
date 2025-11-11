@@ -478,7 +478,7 @@ App: DeaFLYMPICS PWA
 
           {/* Grille des catégories (2x2) */}
           <div
-            className="about"
+            className="page"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
