@@ -4,10 +4,15 @@ import { Analytics } from "@vercel/analytics/react";
 
 
 /* ---------- Configuration ---------- */
-// Chemin de base (utile si le site est dans un sous-dossier, ex: GitHub Pages)
-const BASE = (import.meta?.env?.BASE_URL) || "/";
-// Nom unique du cache vidéo (versionne pour forcer une mise à jour)
+// Configuration pour le chemin de base et le cache
+// En local (vite) => "/", sur GitHub Pages => "/vol-deaflympics/"
+const BASE =
+  (import.meta?.env?.BASE_URL) ||
+  (location.pathname.startsWith("/vol-deaflympics/") ? "/vol-deaflympics/" : "/");
+
+// Nom du cache partagé entre App.jsx et sw.js
 const CACHE_NAME = "videos-v3";
+
 
 
 /* ---------- Helpers vidéos ---------- */
@@ -313,34 +318,41 @@ useEffect(() => {
     document.body.style.overflow = "";
   }
 
-  async function cacheCategory(catId) {
+  async function cacheAllCategories() {
+  if (!("caches" in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
   try {
-    if (!("caches" in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
-
-    const files = videoManifest[catId] || [];
-    if (!files.length) { alert(`Aucune vidéo listée dans "${catId}".`); return; }
+    setDownloading(true);
+    setDownloadPct(0);
 
     const cache = await caches.open(CACHE_NAME);
-    let ok = 0, ko = 0;
 
-    for (const f of files) {
-      // URL EXACTE utilisée par <video src=...>
-      const url = `${location.origin}${BASE}videos/${catId}/${f}`;
+    const entries = Object.entries(videoManifest);
+    const allUrls = entries.flatMap(([cat, files]) =>
+      files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
+    );
+
+    let done = 0;
+    for (const url of allUrls) {
       try {
-        const res = await fetch(url, { cache: "no-store" });   // on télécharge vraiment
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        await cache.put(url, res.clone());                     // on stocke à la même URL
-        ok++;
-      } catch (e) {
-        console.warn("⚠️ échec cache:", url, e);
-        ko++;
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          await cache.put(url, res.clone()); // on stocke à l’URL EXACTE
+        }
+      } catch {
+        // on ignore l’erreur mais on continue d’avancer la progression
       }
+      done++;
+      setDownloadPct(Math.round((done / allUrls.length) * 100));
     }
 
-    alert(`Catégorie "${catId}" prête hors-ligne : ${ok} ok, ${ko} en échec.`);
+    setDownloading(false);
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 1500);
+    alert(`Hors-ligne prêt : ${done}/${allUrls.length} vidéos en cache.`);
   } catch (e) {
     console.error(e);
-    alert("Impossible de précharger cette catégorie.");
+    setDownloading(false);
+    alert("Échec du pré-chargement hors-ligne (permissions/espace ?).");
   }
 }
 
@@ -372,17 +384,24 @@ useEffect(() => {
   }
 
   async function clearAllCaches() {
-    if (!('caches' in window)) return;
-    const ok = confirm("Vider toutes les vidéos hors-ligne ?");
-    if (!ok) return;
-    try {
-      await caches.delete('videos-v1');
-      alert("Cache vidéos vidé.");
-      setDownloadPct(0);
-    } catch {
-      alert("Impossible de vider le cache.");
-    }
+  if (!("caches" in window)) return;
+  const ok = confirm("Vider toutes les vidéos hors-ligne ?");
+  if (!ok) return;
+  try {
+    // On supprime le cache courant + d’éventuelles anciennes versions (videos-v1, v2…)
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter(k => k === CACHE_NAME || k.startsWith("videos-"))
+        .map(k => caches.delete(k))
+    );
+    alert("Cache vidéos vidé.");
+    setDownloadPct(0);
+  } catch (e) {
+    console.error(e);
+    alert("Impossible de vider le cache.");
   }
+}
 
   function toggleFav(cat, word) {
     setFavs(prev => {
