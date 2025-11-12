@@ -863,7 +863,7 @@ App: DeaFLYMPICS PWA
 </div>
   {/* Pied de page / mentions */}
           <footer style={{margin:"0 0 1rem", fontSize:".9rem", color:"#6b7a99", textAlign:"center", maxWidth:900, lineHeight:1.5}}>
-            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) Air France — Glossaire LSF hors-ligne pour les vols Paris ⇄ Tokyo ⇄ Paris.<br/>
+            © {new Date().getFullYear()} — Usage interne équipages (PNC/PNT) — Glossaire LSF hors-ligne pour les vols Paris ⇄ Tokyo ⇄ Paris.<br/>
             Vidéos : droits réservés à leurs ayants droit / Julien Bazin / Sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
           </footer>
 </div>
