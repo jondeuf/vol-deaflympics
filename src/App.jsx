@@ -357,43 +357,53 @@ useEffect(() => {
 }
 
   async function cacheAllCategories() {
-    if (!('caches' in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
-    try {
-      setDownloading(true);
-      setDownloadPct(0);
-      await caches.delete(CACHE_NAME);
-      const entries = Object.entries(videoManifest);
-      const allUrls = entries.flatMap(([cat, files]) =>
-        files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
-      );
-      for (const url of allUrls) {
-        try { await cache.add(url); } catch { /* ignore */ }
-        done++;
-        setDownloadPct(Math.round((done / allUrls.length) * 100));
-      }
-      setTimeout(() => {
-        setDownloading(false);
-        setCelebrate(true);
-        setTimeout(() => setCelebrate(false), 1500);
-        alert(`Hors-ligne prêt : ${done}/${allUrls.length} vidéos en cache.`);
-      }, 300);
-    } catch {
-      setDownloading(false);
-      alert("Échec du pré-chargement hors-ligne (permissions/espace ?).");
-    }
-  }
+  if (!("caches" in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
+  try {
+    setDownloading(true);
+    setDownloadPct(0);
 
-  async function clearAllCaches() {
+    const cache = await caches.open(CACHE_NAME);
+
+    const entries = Object.entries(videoManifest);
+    const allUrls = entries.flatMap(([cat, files]) =>
+      files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
+    );
+
+    let done = 0;
+    for (const url of allUrls) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          await cache.put(url, res.clone()); // range exactement à la même URL
+        } else {
+          console.warn("❌ fetch non OK:", url, res.status);
+        }
+      } catch (e) {
+        console.warn("⚠️ fetch error:", url, e);
+      }
+      done++;
+      setDownloadPct(Math.round((done / allUrls.length) * 100));
+    }
+
+    setDownloading(false);
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 1500);
+    alert(`Hors-ligne prêt : ${done}/${allUrls.length} vidéos en cache.`);
+  } catch (e) {
+    console.error(e);
+    setDownloading(false);
+    alert("Échec du pré-chargement hors-ligne (permissions/espace ?).");
+  }
+}
+
+async function clearAllCaches() {
   if (!("caches" in window)) return;
   const ok = confirm("Vider toutes les vidéos hors-ligne ?");
   if (!ok) return;
   try {
-    // On supprime le cache courant + d’éventuelles anciennes versions (videos-v1, v2…)
     const keys = await caches.keys();
     await Promise.all(
-      keys
-        .filter(k => k === CACHE_NAME || k.startsWith("videos-"))
-        .map(k => caches.delete(k))
+      keys.filter(k => k === CACHE_NAME || k.startsWith("videos-")).map(k => caches.delete(k))
     );
     alert("Cache vidéos vidé.");
     setDownloadPct(0);
