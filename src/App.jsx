@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import deaflympicsLogo from "./assets/deaflympics2025.png";
+import { Analytics } from "@vercel/analytics/react";
 
 
 /* ---------- Configuration ---------- */
@@ -867,6 +868,7 @@ App: DeaFLYMPICS PWA
             Vidéos : droits réservés à leurs ayants droit / Julien Bazin / Sources d’origine. Ce contenu n’est pas destiné à un usage commercial extérieur.
           </footer>
 </div>
+    <Analytics />
     </div>
   );
 }
