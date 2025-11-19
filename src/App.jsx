@@ -437,11 +437,18 @@ async function clearAllCaches() {
     const body = encodeURIComponent(
 `Bonjour,
 
+
+
+
 Je souhaite vous faire un retour :
 
-- Contexte : ________________________
-- Mot(s)/catégorie(s) concernés : ________________________
-- Suggestion(s) : ________________________
+- Contexte : 
+
+- Signe concerné(s) : 
+
+- Suggestion(s) : 
+
+
 
 Infos techniques:
 User-Agent: ${navigator.userAgent}
