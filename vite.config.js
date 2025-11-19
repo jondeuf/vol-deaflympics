@@ -1,7 +1,9 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
 export default defineConfig({
+  // IMPORTANT pour GitHub Pages : ton repo s’appelle "vol-deaflympics"
+  base: "/vol-deaflympics/",
   plugins: [react()],
-})
+});
+
