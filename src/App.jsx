@@ -99,7 +99,7 @@ const ABOUT_HTML = `
     <li>Cyclisme sur route</li><li>Cyclisme sur piste</li><li>Échecs</li><li>Escalade sportive</li><li>Football</li>
     <li>Golf</li><li>Handball</li><li>Judo</li><li>Karaté</li><li>Lutte</li><li>Natation</li><li>Orienteering</li><li>Pétanque</li>
     <li>Plongeon</li><li>Rugby à 7</li><li>Taekwondo</li><li>Tennis</li><li>Tennis de table</li><li>Tir</li>
-    <li>Tir à l'arc</li><li>Tir sportif</li><li>Triathlon</li><li>Volley-ball</li><li>Water-polo</li>
+    <li>Tir à l'arc</li><li>Tir sportif</li><li>Triathlon</li><li>Volley-ball</li><li>Water polo</li>
     <li>Aviron</li><li>Escrime</li><li>Gymnastique artistique</li><li>Gymnastique rythmique</li>
   </ul>
   <p>
