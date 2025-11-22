@@ -4,13 +4,12 @@ import { Analytics } from "@vercel/analytics/react";
 
 
 /* ---------- Configuration ---------- */
-// Configuration pour le chemin de base et le cache
-// En local (vite) => "/", sur GitHub Pages => "/vol-deaflympics/"
+// Local/Vercel => "/", GitHub Pages => "/vol-deaflympics/" (détecté auto)
 const BASE =
   (import.meta?.env?.BASE_URL) ||
   (location.pathname.startsWith("/vol-deaflympics/") ? "/vol-deaflympics/" : "/");
 
-// Nom du cache partagé entre App.jsx et sw.js
+// Nom du cache (doit matcher public/sw.js)
 const CACHE_NAME = "videos-v3";
 
 
@@ -317,37 +316,51 @@ useEffect(() => {
     setNowLabel("");
     document.body.style.overflow = "";
   }
-
   async function cacheAllCategories() {
-  if (!("caches" in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
+  // Vérifie que l’API Cache est dispo
+  if (!("caches" in window)) {
+    alert("Le cache navigateur n'est pas disponible.");
+    return;
+  }
+
   try {
     setDownloading(true);
     setDownloadPct(0);
 
+    // On ouvre (ou crée) le cache dédié
     const cache = await caches.open(CACHE_NAME);
 
-    const entries = Object.entries(videoManifest);
+    // Liste de toutes les URLs vidéo à pré-charger
+    const entries = Object.entries(videoManifest || {});
     const allUrls = entries.flatMap(([cat, files]) =>
-      files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
+      (files || []).map((f) => `${location.origin}${BASE}videos/${cat}/${f}`)
     );
 
     let done = 0;
+
     for (const url of allUrls) {
       try {
+        // On force un vrai fetch réseau (pas le cache HTTP)
         const res = await fetch(url, { cache: "no-store" });
         if (res.ok) {
-          await cache.put(url, res.clone()); // on stocke à l’URL EXACTE
+          // On stocke la réponse dans le cache à l’URL exacte
+          await cache.put(url, res.clone());
         }
-      } catch {
-        // on ignore l’erreur mais on continue d’avancer la progression
+      } catch (e) {
+        // Si une vidéo échoue, on ignore mais on continue
+        console.warn("Impossible de précharger :", url, e);
       }
+
       done++;
-      setDownloadPct(Math.round((done / allUrls.length) * 100));
+      if (allUrls.length > 0) {
+        setDownloadPct(Math.round((done / allUrls.length) * 100));
+      }
     }
 
     setDownloading(false);
     setCelebrate(true);
     setTimeout(() => setCelebrate(false), 1500);
+
     alert(`Hors-ligne prêt : ${done}/${allUrls.length} vidéos en cache.`);
   } catch (e) {
     console.error(e);
@@ -355,33 +368,6 @@ useEffect(() => {
     alert("Échec du pré-chargement hors-ligne (permissions/espace ?).");
   }
 }
-
-  async function cacheAllCategories() {
-    if (!('caches' in window)) { alert("Le cache navigateur n'est pas disponible."); return; }
-    try {
-      setDownloading(true);
-      setDownloadPct(0);
-      await caches.delete(CACHE_NAME);
-      const entries = Object.entries(videoManifest);
-      const allUrls = entries.flatMap(([cat, files]) =>
-        files.map(f => `${location.origin}${BASE}videos/${cat}/${f}`)
-      );
-      for (const url of allUrls) {
-        try { await cache.add(url); } catch { /* ignore */ }
-        done++;
-        setDownloadPct(Math.round((done / allUrls.length) * 100));
-      }
-      setTimeout(() => {
-        setDownloading(false);
-        setCelebrate(true);
-        setTimeout(() => setCelebrate(false), 1500);
-        alert(`Hors-ligne prêt : ${done}/${allUrls.length} vidéos en cache.`);
-      }, 300);
-    } catch {
-      setDownloading(false);
-      alert("Échec du pré-chargement hors-ligne (permissions/espace ?).");
-    }
-  }
 
   async function clearAllCaches() {
   if (!("caches" in window)) return;
