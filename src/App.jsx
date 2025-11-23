@@ -291,7 +291,9 @@ export default function App() {
   // --- Service Worker (enregistrement pour le mode hors ligne) ---
 useEffect(() => {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(`${BASE}sw.js`).catch(() => {});
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('✅ Service Worker enregistré'))
+      .catch((err) => console.error('❌ Erreur Service Worker:', err));
   }
 }, []);
   useEffect(() => {
