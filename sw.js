@@ -1,15 +1,15 @@
-// public/sw.js – Service Worker vidéos offline (v4 - CORRIGÉ)
-const CACHE_VIDEOS = "videos-v4";
-const CACHE_STATIC = "static-v2";
+// public/sw.js – Service Worker vidéos offline (v5 - iOS OPTIMISÉ)
+const CACHE_VIDEOS = "videos-v5";
+const CACHE_STATIC = "static-v3";
 
 // --- install / activate ---
 self.addEventListener("install", (event) => {
-  console.log("✅ Service Worker installé (v4)");
+  console.log("✅ Service Worker installé (v5 - iOS optimisé)");
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  console.log("🔄 Service Worker activé (v4)");
+  console.log("🔄 Service Worker activé (v5)");
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
@@ -37,13 +37,13 @@ self.addEventListener("fetch", (event) => {
 
   const pathname = url.pathname;
 
-  // 🎥 VIDÉOS : Détection améliorée pour gérer /videos/ ET /vol-deaflympics/videos/
+  // 🎥 VIDÉOS : Détection pour .mp4
   if (pathname.includes("/videos/") && pathname.endsWith(".mp4")) {
     event.respondWith(handleVideoRequest(req));
     return;
   }
 
-  // 📄 FICHIERS STATIQUES (HTML, CSS, JS, manifest, etc.)
+  // 📄 FICHIERS STATIQUES
   event.respondWith(
     caches.open(CACHE_STATIC).then(async (cache) => {
       const cached = await cache.match(req);
@@ -66,58 +66,77 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// 🎥 GESTION DES VIDÉOS AVEC SUPPORT DES RANGE REQUESTS
+// 🎥 GESTION DES VIDÉOS - OPTIMISÉ POUR IOS
 async function handleVideoRequest(req) {
   const cache = await caches.open(CACHE_VIDEOS);
   
-  // Nettoyer l'URL (enlever les query params)
-  const cleanUrl = req.url.split("?")[0];
-  const pathname = new URL(cleanUrl).pathname;
+  // Nettoyer l'URL
+  const url = new URL(req.url);
+  const cleanUrl = url.origin + url.pathname;
   
-  console.log("🎬 Requête vidéo:", pathname);
+  console.log("🎬 Requête vidéo:", url.pathname);
   
   const rangeHeader = req.headers.get("range");
+  console.log("📊 Range demandé:", rangeHeader || "FULL");
   
   // 1️⃣ Chercher dans le cache
-  const cached = await cache.match(cleanUrl);
+  let cached = await cache.match(cleanUrl);
+  
+  // Si pas trouvé, essayer sans l'origin
+  if (!cached) {
+    cached = await cache.match(url.pathname);
+  }
   
   if (cached) {
-    console.log("✅ Vidéo trouvée en cache:", pathname);
+    console.log("✅ Vidéo trouvée en cache");
     
+    // Pour iOS, il FAUT toujours supporter les ranges
     if (rangeHeader) {
-      // Safari/iOS demande des ranges
-      return respondWithRange(cached, rangeHeader);
+      return await createRangeResponse(cached, rangeHeader);
     }
     
-    // Réponse complète
-    const headers = new Headers(cached.headers);
-    headers.set("Accept-Ranges", "bytes");
+    // Même sans range, iOS peut en demander plus tard
+    // On retourne la vidéo complète avec les bons headers
+    const blob = await cached.blob();
+    const headers = new Headers();
     headers.set("Content-Type", "video/mp4");
+    headers.set("Content-Length", String(blob.size));
+    headers.set("Accept-Ranges", "bytes");
     headers.set("Cache-Control", "public, max-age=31536000");
     
-    return new Response(await cached.blob(), { 
-      status: 200, 
-      headers 
+    return new Response(blob, {
+      status: 200,
+      statusText: "OK",
+      headers
     });
   }
 
   // 2️⃣ Pas en cache : télécharger
-  console.log("📥 Téléchargement vidéo:", pathname);
+  console.log("📥 Téléchargement vidéo depuis le réseau");
   
   try {
     const res = await fetch(req);
     
-    if (res.ok) {
+    if (res.ok && res.status === 200) {
       // Mettre en cache pour la prochaine fois
       const cloneForCache = res.clone();
       await cache.put(cleanUrl, cloneForCache);
-      console.log("💾 Vidéo mise en cache:", pathname);
+      console.log("💾 Vidéo mise en cache");
+      
+      // Si range demandé, on doit reconstruire la réponse
+      if (rangeHeader) {
+        const blob = await res.blob();
+        const mockResponse = new Response(blob, {
+          status: 200,
+          headers: { "Content-Type": "video/mp4" }
+        });
+        return await createRangeResponse(mockResponse, rangeHeader);
+      }
     }
     
     return res;
   } catch (err) {
-    console.error("❌ Erreur téléchargement vidéo:", pathname, err);
-    // Hors ligne et pas de cache
+    console.error("❌ Erreur téléchargement vidéo:", err);
     return new Response("Video not available offline", { 
       status: 504,
       statusText: "Gateway Timeout" 
@@ -125,43 +144,79 @@ async function handleVideoRequest(req) {
   }
 }
 
-// 🎯 GESTION DES RANGE REQUESTS (pour iOS/Safari)
-async function respondWithRange(response, rangeHeader) {
-  const blob = await response.blob();
-  const size = blob.size;
-  
-  // Parser le range header : "bytes=0-1023"
-  const match = /bytes=(\d+)-(\d+)?/.exec(rangeHeader);
-  
-  if (!match) {
-    // Range invalide, retourner la vidéo complète
+// 🎯 CRÉER UNE RÉPONSE RANGE - VERSION iOS COMPATIBLE
+async function createRangeResponse(response, rangeHeader) {
+  try {
+    // Récupérer le blob complet
+    const fullBlob = await response.blob();
+    const fullSize = fullBlob.size;
+    
+    console.log("📏 Taille totale vidéo:", fullSize);
+    
+    // Parser le range: "bytes=0-1023" ou "bytes=0-"
+    const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+    
+    if (!rangeMatch) {
+      console.warn("⚠️ Range header invalide, retour vidéo complète");
+      return new Response(fullBlob, {
+        status: 200,
+        headers: {
+          "Content-Type": "video/mp4",
+          "Content-Length": String(fullSize),
+          "Accept-Ranges": "bytes"
+        }
+      });
+    }
+    
+    const start = parseInt(rangeMatch[1], 10);
+    let end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : fullSize - 1;
+    
+    // iOS demande parfois des ranges invalides, on corrige
+    if (start >= fullSize) {
+      console.warn("⚠️ Range start >= size, retour 416");
+      return new Response("Range Not Satisfiable", {
+        status: 416,
+        headers: {
+          "Content-Range": `bytes */${fullSize}`
+        }
+      });
+    }
+    
+    // Limiter end à la taille max
+    if (end >= fullSize) {
+      end = fullSize - 1;
+    }
+    
+    // Extraire le chunk
+    const chunk = fullBlob.slice(start, end + 1);
+    const chunkSize = chunk.size;
+    
+    console.log(`📦 Range response: bytes ${start}-${end}/${fullSize} (${chunkSize} bytes)`);
+    
+    // Headers pour iOS (ordre important!)
+    const headers = new Headers();
+    headers.set("Content-Range", `bytes ${start}-${end}/${fullSize}`);
+    headers.set("Accept-Ranges", "bytes");
+    headers.set("Content-Length", String(chunkSize));
+    headers.set("Content-Type", "video/mp4");
+    headers.set("Cache-Control", "public, max-age=31536000");
+    
+    return new Response(chunk, {
+      status: 206,
+      statusText: "Partial Content",
+      headers
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur dans createRangeResponse:", error);
+    // En cas d'erreur, retourner la vidéo complète
+    const blob = await response.blob();
     return new Response(blob, {
       status: 200,
       headers: {
         "Content-Type": "video/mp4",
-        "Accept-Ranges": "bytes",
-        "Content-Length": String(size)
+        "Accept-Ranges": "bytes"
       }
     });
   }
-  
-  const start = parseInt(match[1], 10);
-  const end = match[2] ? parseInt(match[2], 10) : size - 1;
-  
-  // Extraire le chunk demandé
-  const chunk = blob.slice(start, end + 1);
-  
-  const headers = new Headers();
-  headers.set("Content-Range", `bytes ${start}-${end}/${size}`);
-  headers.set("Accept-Ranges", "bytes");
-  headers.set("Content-Length", String(chunk.size));
-  headers.set("Content-Type", "video/mp4");
-  headers.set("Cache-Control", "public, max-age=31536000");
-  
-  console.log(`📦 Range response: ${start}-${end}/${size}`);
-  
-  return new Response(chunk, { 
-    status: 206,  // Partial Content
-    headers 
-  });
 }
