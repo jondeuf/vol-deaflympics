@@ -10,7 +10,7 @@ const BASE =
   (location.pathname.startsWith("/vol-deaflympics/") ? "/vol-deaflympics/" : "/");
 
 // Nom du cache (doit matcher public/sw.js)
-const CACHE_NAME = "videos-v4";
+const CACHE_NAME = "videos-v6";
 
 
 
