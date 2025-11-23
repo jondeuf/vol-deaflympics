@@ -1,15 +1,29 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { copyFileSync } from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Plugin pour copier sw.js à la racine du build
+    {
+      name: 'copy-sw',
+      closeBundle() {
+        try {
+          copyFileSync('public/sw.js', 'dist/sw.js')
+          console.log('✅ sw.js copié dans dist/')
+        } catch (e) {
+          console.warn('⚠️ Impossible de copier sw.js:', e.message)
+        }
+      }
+    }
+  ],
   
   // Configuration pour le build
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // Optimisation des chunks
     rollupOptions: {
       output: {
         manualChunks: {
