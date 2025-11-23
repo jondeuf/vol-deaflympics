@@ -1,46 +1,22 @@
-// public/sw.js – Service Worker vidéos offline (v6 - AVEC PRÉ-CACHE)
-const CACHE_VIDEOS = "videos-v6";
-const CACHE_STATIC = "static-v6";
-const CACHE_APP = "app-v6";
+// public/sw.js – Service Worker vidéos offline (v5 - iOS OPTIMISÉ)
+const CACHE_VIDEOS = "videos-v5";
+const CACHE_STATIC = "static-v3";
 
-// Fichiers essentiels à pré-cacher pour que l'app fonctionne hors ligne
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest'
-];
-
-// --- install ---
+// --- install / activate ---
 self.addEventListener("install", (event) => {
-  console.log("✅ Service Worker installé (v6 - avec pré-cache)");
-  
-  event.waitUntil(
-    (async () => {
-      // Pré-cacher l'app shell
-      const cache = await caches.open(CACHE_APP);
-      try {
-        await cache.addAll(APP_SHELL);
-        console.log("📦 App shell pré-cachée:", APP_SHELL);
-      } catch (e) {
-        console.warn("⚠️ Erreur pré-cache app shell:", e);
-      }
-      
-      // Activer immédiatement
-      await self.skipWaiting();
-    })()
-  );
+  console.log("✅ Service Worker installé (v5 - iOS optimisé)");
+  self.skipWaiting();
 });
 
-// --- activate ---
 self.addEventListener("activate", (event) => {
-  console.log("🔄 Service Worker activé (v6)");
+  console.log("🔄 Service Worker activé (v5)");
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
       // Supprimer les anciens caches
       await Promise.all(
         keys
-          .filter(k => ![CACHE_VIDEOS, CACHE_STATIC, CACHE_APP].includes(k))
+          .filter(k => ![CACHE_VIDEOS, CACHE_STATIC].includes(k))
           .map(k => {
             console.log("🗑️ Suppression ancien cache:", k);
             return caches.delete(k);
@@ -61,48 +37,13 @@ self.addEventListener("fetch", (event) => {
 
   const pathname = url.pathname;
 
-  // 🎥 VIDÉOS
+  // 🎥 VIDÉOS : Détection pour .mp4
   if (pathname.includes("/videos/") && pathname.endsWith(".mp4")) {
     event.respondWith(handleVideoRequest(req));
     return;
   }
 
-  // 📄 NAVIGATION (HTML) - Cache First avec Network Fallback
-  if (req.mode === 'navigate' || pathname === '/' || pathname.endsWith('.html')) {
-    event.respondWith(
-      (async () => {
-        // D'abord chercher dans le cache app
-        const cachedApp = await caches.match(req);
-        if (cachedApp) {
-          console.log("📦 Navigation depuis cache:", pathname);
-          return cachedApp;
-        }
-        
-        // Sinon essayer le réseau
-        try {
-          const response = await fetch(req);
-          if (response.ok) {
-            const cache = await caches.open(CACHE_APP);
-            cache.put(req, response.clone());
-          }
-          return response;
-        } catch (e) {
-          console.log("❌ Navigation hors ligne échouée pour:", pathname);
-          // Retourner la page principale en fallback
-          const fallback = await caches.match('/');
-          if (fallback) return fallback;
-          
-          return new Response(
-            '<html><body><h1>Hors ligne</h1><p>Cette page nécessite une connexion.</p></body></html>',
-            { headers: { 'Content-Type': 'text/html' } }
-          );
-        }
-      })()
-    );
-    return;
-  }
-
-  // 📦 AUTRES FICHIERS STATIQUES (JS, CSS, images, etc.)
+  // 📄 FICHIERS STATIQUES
   event.respondWith(
     caches.open(CACHE_STATIC).then(async (cache) => {
       const cached = await cache.match(req);
@@ -155,6 +96,7 @@ async function handleVideoRequest(req) {
     }
     
     // Même sans range, iOS peut en demander plus tard
+    // On retourne la vidéo complète avec les bons headers
     const blob = await cached.blob();
     const headers = new Headers();
     headers.set("Content-Type", "video/mp4");
@@ -176,12 +118,12 @@ async function handleVideoRequest(req) {
     const res = await fetch(req);
     
     if (res.ok && res.status === 200) {
-      // Mettre en cache
+      // Mettre en cache pour la prochaine fois
       const cloneForCache = res.clone();
       await cache.put(cleanUrl, cloneForCache);
       console.log("💾 Vidéo mise en cache");
       
-      // Si range demandé, reconstruire la réponse
+      // Si range demandé, on doit reconstruire la réponse
       if (rangeHeader) {
         const blob = await res.blob();
         const mockResponse = new Response(blob, {
@@ -205,6 +147,7 @@ async function handleVideoRequest(req) {
 // 🎯 CRÉER UNE RÉPONSE RANGE - VERSION iOS COMPATIBLE
 async function createRangeResponse(response, rangeHeader) {
   try {
+    // Récupérer le blob complet
     const fullBlob = await response.blob();
     const fullSize = fullBlob.size;
     
@@ -214,7 +157,7 @@ async function createRangeResponse(response, rangeHeader) {
     const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
     
     if (!rangeMatch) {
-      console.warn("⚠️ Range header invalide");
+      console.warn("⚠️ Range header invalide, retour vidéo complète");
       return new Response(fullBlob, {
         status: 200,
         headers: {
@@ -228,14 +171,18 @@ async function createRangeResponse(response, rangeHeader) {
     const start = parseInt(rangeMatch[1], 10);
     let end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : fullSize - 1;
     
-    // Validation
+    // iOS demande parfois des ranges invalides, on corrige
     if (start >= fullSize) {
+      console.warn("⚠️ Range start >= size, retour 416");
       return new Response("Range Not Satisfiable", {
         status: 416,
-        headers: { "Content-Range": `bytes */${fullSize}` }
+        headers: {
+          "Content-Range": `bytes */${fullSize}`
+        }
       });
     }
     
+    // Limiter end à la taille max
     if (end >= fullSize) {
       end = fullSize - 1;
     }
@@ -246,7 +193,7 @@ async function createRangeResponse(response, rangeHeader) {
     
     console.log(`📦 Range response: bytes ${start}-${end}/${fullSize} (${chunkSize} bytes)`);
     
-    // Headers pour iOS
+    // Headers pour iOS (ordre important!)
     const headers = new Headers();
     headers.set("Content-Range", `bytes ${start}-${end}/${fullSize}`);
     headers.set("Accept-Ranges", "bytes");
@@ -262,6 +209,7 @@ async function createRangeResponse(response, rangeHeader) {
     
   } catch (error) {
     console.error("❌ Erreur dans createRangeResponse:", error);
+    // En cas d'erreur, retourner la vidéo complète
     const blob = await response.blob();
     return new Response(blob, {
       status: 200,
