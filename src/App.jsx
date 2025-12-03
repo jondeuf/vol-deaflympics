@@ -267,6 +267,72 @@ export default function App() {
   const [nowLabel, setNowLabel] = useState("");
   const [query, setQuery] = useState("");
 
+  // 🌙 Dark mode
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem("darkMode") === "true"; }
+    catch { return false; }
+  });
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    
+    const style = document.createElement('style');
+    style.id = 'dark-mode-global';
+    style.textContent = `
+      body[data-theme="dark"] {
+        background: #0f1419 !important;
+      }
+      body[data-theme="dark"] * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      }
+      body[data-theme="dark"] #root > div {
+        background: #0f1419 !important;
+      }
+      body[data-theme="dark"] div[style*="background: #fff"],
+      body[data-theme="dark"] div[style*='background: "#fff"'],
+      body[data-theme="dark"] div[style*="background:#fff"],
+      body[data-theme="dark"] div[style*="background: rgb(255, 255, 255)"] {
+        background: #1a2332 !important;
+      }
+      body[data-theme="dark"] div[style*="rgba(39,68,114,0.07)"],
+      body[data-theme="dark"] div[style*="rgba(39,68,114,0.05)"] {
+        background: rgba(74, 158, 255, 0.08) !important;
+      }
+      body[data-theme="dark"] button[style*="#274472"] {
+        background: #4a9eff !important;
+        color: #fff !important;
+      }
+      body[data-theme="dark"] h1, 
+      body[data-theme="dark"] h2, 
+      body[data-theme="dark"] h3, 
+      body[data-theme="dark"] h4,
+      body[data-theme="dark"] div[style*="color: #274472"],
+      body[data-theme="dark"] div[style*="color:#274472"],
+      body[data-theme="dark"] span[style*="color: #274472"],
+      body[data-theme="dark"] p,
+      body[data-theme="dark"] li,
+      body[data-theme="dark"] strong {
+        color: #e8eef5 !important;
+      }
+      body[data-theme="dark"] span[style*="color: #6b7a99"],
+      body[data-theme="dark"] div[style*="color: #6b7a99"] {
+        color: #a0aec0 !important;
+      }
+      body[data-theme="dark"] footer {
+        color: #a0aec0 !important;
+      }
+    `;
+    
+    const existing = document.getElementById('dark-mode-global');
+    if (existing) existing.remove();
+    document.head.appendChild(style);
+    
+    return () => {
+      style.remove();
+      document.body.removeAttribute('data-theme');
+    };
+  }, [darkMode]);
+
   // favoris
   const [favs, setFavs] = useState(() => {
     try { return JSON.parse(localStorage.getItem("favs") || "{}"); }
@@ -442,6 +508,41 @@ App: DeaFLYMPICS PWA
   );
 
   const videoRef = useRef(null);
+// Styles dynamiques pour dark mode
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'dark-mode-styles';
+    style.textContent = `
+      ${darkMode ? `
+        * { transition: background-color 0.3s ease, color 0.3s ease !important; }
+        body { background: #0f1419 !important; color: #e8eef5 !important; }
+        div[style*="background: #fff"], 
+        div[style*='background: "#fff"'],
+        div[style*="background:#fff"] { 
+          background: #1a2332 !important; 
+        }
+        div[style*="color: #274472"],
+        div[style*='color: "#274472"'],
+        div[style*="color:#274472"],
+        h2, h3, h4, p, li, span, strong {
+          color: #e8eef5 !important;
+        }
+        button[style*="background: #274472"] {
+          background: #4a9eff !important;
+        }
+        div[style*="background: rgba(39,68,114,0.07)"],
+        div[style*="background: rgba(39,68,114,0.05)"] {
+          background: rgba(74, 158, 255, 0.1) !important;
+        }
+      ` : ''}
+    `;
+    
+    const existing = document.getElementById('dark-mode-styles');
+    if (existing) existing.remove();
+    document.head.appendChild(style);
+    
+    return () => style.remove();
+  }, [darkMode]);
 
   return (
     <div
@@ -459,6 +560,34 @@ App: DeaFLYMPICS PWA
         WebkitTapHighlightColor: "transparent",
       }}
     >
+      {/* 🌙 Dark Mode Toggle - EN HAUT */}
+      <button
+        onClick={() => setDarkMode(!darkMode)}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'red',
+          color: darkMode ? '#fbbf24' : '#274472',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          fontSize: '1.8rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        title={darkMode ? "Mode clair" : "Mode sombre"}
+      >
+        {darkMode ? '☀️' : '🌙'}
+      </button>
       {/* Logo */}
       <img
         src={deaflympicsLogo}
